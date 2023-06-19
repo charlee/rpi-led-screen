@@ -108,7 +108,7 @@ class YouTubePlayer:
         video_id = query["v"][0]
 
         # generate embed url
-        url = 'https://www.youtube.com/embed/{}?autoplay=1&controls=0&rel=0'.format(video_id)
+        url = 'https://www.youtube.com/embed/{}?autoplay=1&rel=0'.format(video_id)
         
         # generate a webpage that contains the above url
         html = '''
