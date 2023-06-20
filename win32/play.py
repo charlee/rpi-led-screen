@@ -6,6 +6,7 @@ import webview
 import dxcam
 import argparse
 from urllib.parse import urlparse, parse_qs
+from byteorder import get_byte_index_offset
 import serial.tools.list_ports
 
 
@@ -27,6 +28,7 @@ class YouTubePlayer:
 
         self.camera = None
         self.port = None
+        self.serial = None
         
         self.lock = threading.Lock()
         
@@ -34,20 +36,16 @@ class YouTubePlayer:
         '''
         Initialize serial port
         '''
-        if not self.port:
-            raise Exception('COM port not specified')
-
-        self.serial = serial.Serial(self.port, 115200, timeout=1)
-        print(f'Serial port initialized: {self.serial.name}')
+        if self.port:
+            self.serial = serial.Serial(self.port, 115200, timeout=1)
+            print(f'Serial port initialized: {self.serial.name}')
         
     def send_bytes(self, bytes: bytearray):
         '''
         Send bytes to the serial port
         '''
-        if not self.serial:
-            raise Exception('Serial port not initialized')
-        
-        self.serial.write(bytes)
+        if self.serial:
+            self.serial.write(bytes)
 
 
     def process_frame(self, frame):
@@ -67,14 +65,17 @@ class YouTubePlayer:
         Send frame to LED screen
         '''
         # convert to bytes
-        bytes = bytearray()
+        size = LEDSCREEN_W * LEDSCREEN_H // 8
+        bytes = bytearray(size)
+
         for y in range(LEDSCREEN_H):
-            for x in range(0, LEDSCREEN_W, 8):
-                byte = 0
-                for i in range(8):
-                    if frame[y][x + i] > 0:
-                        byte |= 1 << i
-                bytes.append(byte)
+            for x in range(0, LEDSCREEN_W):
+                if frame[y][x] == 0:
+                    bit = 0
+                else:
+                    bit = 1
+                index, offset = get_byte_index_offset(x, y)
+                bytes[index] |= bit << offset
         
         self.send_bytes(bytes)
 
@@ -157,21 +158,27 @@ class YouTubePlayer:
                 print(f'{port.device}: {port.description}')
             exit(0)
             
-        if not args.url or not args.port:
+        if not args.url:
             # show error message to STDERR
-            print('Please specify YouTube video URL and COM port', file=sys.stderr)
+            print('Please specify YouTube video URL', file=sys.stderr)
             parser.print_help()
             exit(0)
             
+        if not args.port:
+            print('COM port not specified, preview only', file=sys.stderr)
+            
+            
         # verify port name
-        ports = serial.tools.list_ports.comports()
-        port_names = [port.device for port in ports]
-        if args.port not in port_names:
-            print(f'Invalid COM port: {args.port}', file=sys.stderr)
-            exit(0)
+        if args.port:
+            ports = serial.tools.list_ports.comports()
+            port_names = [port.device for port in ports]
+            if args.port not in port_names:
+                print(f'Invalid COM port: {args.port}', file=sys.stderr)
+                exit(0)
+
+            self.port = args.port
 
         url = args.url
-        self.port = args.port
         
         # parse video id using urlparse
         url_data = urlparse(url)
