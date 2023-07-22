@@ -14,16 +14,16 @@ See the following video for demo.
 
 ## Hardware
 
-See [hardware/README.md](hardware/README.md) for details.
+See [hardware](hardware/) for details.
 
 ## Code for Raspberry Pi Pico
 
-See [rp2040/README.md](rp2040/README.md) for details.
+See [rp2040](rp2040/) for details.
 
 ## Code for Windows
 
-See [win32/README.md](win32/README.md) for details.
+See [win32](win32/) for details.
 
 ## 3D Models
 
-See [cad/README.md](cad/README.md) for details.
+See [cad](cad/) for details.
